@@ -11,55 +11,66 @@ export class Game extends Component {
         super(props);
 
         this.state = {
-            explosiveMap: Array(size[0]).fill(Array[1].fill(null)),
-            explosive: props.explosive || 25
+            bombCount: 64,
+            mapSize: new position(16, 16),
+            map: null
         }
     }
 
     /**
      * generate a map
-     * @param {number} startX start position x
-     * @param {number} startY start position y
+     * @param {position} startPos start position
      */
-    generateMap(startX, startY) {
-        let placedBomb = [];
-        const start = [startX, startY];
+    generateMap(startPos) {
 
         // generate bomb
-        const bombDrop = (range) => Math.floor(Math.random() * range);
-        const isSamePostion = (a, b) => a[0] == b[0] && a[1] == b[1];
+        const dropBomb = (range) => Math.floor(Math.random() * range);
+        const totalSize = this.state.mapSize.x * this.state.mapSize.y;
+        var dropNumbers = []
 
-        let explosiveMap = this.state.explosiveMap.map((e) => e.slice());
-        
-
-        while(placedBomb.length <= this.state.explosive) {
-            // get coordinate
-            let position = [bombDrop(this.explosiveMap.length), bombDrop(this.explosiveMap[0].length)];
-
-            if (!isSamePostion(position, start) && !placedBomb.some((e) => isSamePostion(e, position))) {
-                placedBomb.push(position);
-                explosiveMap[position[0], position[1]] = -1;
+        while(dropNumbers.length <= this.state.explosive) {
+            // get postion
+            let x = dropBomb(totalSize);
+            if (!dropNumbers.some((e) => e === x)) {
+                dropNumbers.push(x);
             }
         }
+
         // mark the numbers
-
-        for (var i = 0; i < explosiveMap.length; i++) {
-            for (var j = 0; j < explosiveMap[0].length; j++) {
-                
+        let map = Array(totalSize).map((_, index) => {
+            if (dropNumbers.includes(index)) {
+                return -1;
             }
-        }
+            // count neighbors
+            else {
+                let neighbors = position.from(index, this.state.mapSize).around();
+                var count = 0;
+                neighbors.forEach((pos) => {
+                    if(dropNumbers.includes(pos.toNumber())) count++;
+                })
+                return count;
+            }
+        })
+
+        this.setState({
+            bombCount: this.state.bombCount,
+            mapSize: this.state.mapSize,
+            map: map
+        })
     }
 
     /**
      * open a field
-     * @param {number} x 
-     * @param {number} y 
+     * @param {position} pos
      */
-    excavate(x, y) {
-        // if the first click, generate a map
-        if (!this.state.explosiveMap[x][y]) {
-            this.generateMap(x, y);
+    excavate(pos) {
+        // first click
+        if (this.state.map === null) {
+            this.generateMap(pos);
         }
+        
+        // TODO: open the field up
+        
     } 
 
     render() {
@@ -84,6 +95,17 @@ class position {
         this.y = y;
         this.boundary = pos
     }
+
+    /**
+     * get position from element number
+     * @param {number} n element number
+     * @param {position} boundary map size
+     */
+    static from(n, boundary) {
+        let x = Math.floor(n / boundary.y);
+        let y = n % boundary.y;
+        return new position(x, y, boundary);
+    }
     
     /**
      * check if two position is equal
@@ -91,13 +113,6 @@ class position {
      */
     isEqual(pos) {
         return this.x === pos.x && this.y === pos.y;
-    }
-
-    /**
-     * return left and right positions
-     */
-    neighbor() {
-        return [new position(this.x, this.y -1, this.boundary), new position(this.x, this.y + 1, this.boundary)];
     }
 
     /**
@@ -112,10 +127,16 @@ class position {
      * get serrounding of the position
      */
     around() {
-        let top = new position(this.x - 1, this.y, this.boundary)
-        let bottom = new position(this.x + 1, this.y, this.boundary)
+        var neighbors = []
 
-        return [top, bottom].concat(top.neighbor().concat(this.neighbor()).concat(bottom.neighbor()));
+        for (var i = this.x - 1; i <= this.boundary.x && i <= this.x + 1; i++) {
+            for (var j = this.y - 1; j <= this.boundary.y && j <= this.y + 1; j++) {
+                let neighbor = new position(i, j, this.boundary);
+                if (!this.isEqual(neighbor)) {
+                    neighbors.push(neighbor)
+                }
+            }
+        }
+        return neighbors;
     }
-
-    
+}
