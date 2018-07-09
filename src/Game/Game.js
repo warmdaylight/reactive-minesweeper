@@ -16,23 +16,6 @@ export class Game extends Component {
         }
     }
 
-    // helper function
-    /**
-     * 
-     * @param {number[]} position
-     * @returns positions of the coordinate neighbor
-     */
-    private getNeighbor(position) {
-        let x = position[0];
-        let y = position[1];
-
-        return [[x, y - 1], [x, y + 1], [x - 1, y], ]
-    }
-
-    private isSamePostion(a, b) {
-        return a[0] == b[0] && a[1] == b[1];
-    }
-
     /**
      * generate a map
      * @param {number} startX start position x
@@ -87,3 +70,52 @@ export class Game extends Component {
         );
     }
 }
+
+class position {
+
+    /**
+     * Constructor for position
+     * @param {number} x 
+     * @param {number} y 
+     * @param {position} pos minefiled size
+     */
+    constructor(x, y, pos = null) {
+        this.x = x;
+        this.y = y;
+        this.boundary = pos
+    }
+    
+    /**
+     * check if two position is equal
+     * @param {position} pos 
+     */
+    isEqual(pos) {
+        return this.x === pos.x && this.y === pos.y;
+    }
+
+    /**
+     * return left and right positions
+     */
+    neighbor() {
+        return [new position(this.x, this.y -1, this.boundary), new position(this.x, this.y + 1, this.boundary)];
+    }
+
+    /**
+     * get element number in 1 diamension array
+     */
+    toNumber() {
+        if (this.boundary === null) return -1;
+        else return this.x * this.boundary.y + this.y; 
+    }
+
+    /**
+     * get serrounding of the position
+     */
+    around() {
+        let top = new position(this.x - 1, this.y, this.boundary)
+        let bottom = new position(this.x + 1, this.y, this.boundary)
+
+        return [top, bottom].concat(top.neighbor().concat(this.neighbor()).concat(bottom.neighbor()));
+    }
+
+    
